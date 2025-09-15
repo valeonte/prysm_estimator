@@ -36,25 +36,22 @@ def print_eta(start: SlotAtTime, end: SlotAtTime) -> datetime.timedelta:
     seconds_processed = (end.slot_time - start.slot_time).total_seconds()
     current_progressed = end.current_slot - start.current_slot
 
-    current_per_second = current_progressed / seconds_processed
-    slots_per_second_processed = slots_processed / seconds_processed
+    processed_speed = current_progressed / seconds_processed
+    new_slots_speed = slots_processed / seconds_processed
 
-    # We calculate the straight forward estimate first
-    estimate_1_seconds = (end.current_slot - end.slot)/slots_per_second_processed
+    # The actual speed is the difference between the calculating speed
+    # and the speed of new slots being created.
+    cover_speed = new_slots_speed - processed_speed
+    estimate_seconds = (end.current_slot - end.slot)/cover_speed
 
-    # Then we estimate how much the slots will have progressed in the meantime
-    current_progress_in_estimate = current_per_second * estimate_1_seconds
-
-    # And calculate a more accurate estimate
-    estimate_2_seconds = (end.current_slot + current_progress_in_estimate - end.slot)/slots_per_second_processed
-
-    print(f"{slots_processed} slots processed in {datetime.timedelta(seconds=seconds_processed)}, "
-          f"aka {slots_per_second_processed:.1f} slots/second, "
-          f"estimated finish at {now + datetime.timedelta(seconds=estimate_2_seconds):%Y-%m-%d %H:%M}")
-    return datetime.timedelta(seconds=estimate_2_seconds)
+    print(f"{slots_processed} slots ({100*slots_processed/end.current_slot:.2f}%) "
+          f"processed in {datetime.timedelta(seconds=seconds_processed)}, "
+          f"aka {new_slots_speed:.1f} slots/second, "
+          f"estimated finish at {now + datetime.timedelta(seconds=estimate_seconds):%Y-%m-%d %H:%M}")
+    return datetime.timedelta(seconds=estimate_seconds)
 
 
-def print_etas(logs_folder: str) -> None:
+def print_etas(logs_folder: str | Path) -> None:
     now = datetime.datetime.now(datetime.UTC)
     start_of_day = now - datetime.timedelta(days=1)
     start_of_hour = now - datetime.timedelta(hours=1)
@@ -87,28 +84,28 @@ def print_etas(logs_folder: str) -> None:
                     one_hour_start = slot
 
     print()
-    time_format = "%Y-%m-%d %H:%m"
+    time_format = "%Y-%m-%d %H:%M"
     assert all_end is not None
     print("Last log (UTC):", all_end.slot_time.strftime(time_format))
     print()
 
     assert all_time_start is not None
-    print("All time start (UTC):", all_time_start.slot_time.strftime(time_format))
+    print("Sync Start start (UTC):", all_time_start.slot_time.strftime(time_format))
     print_eta(all_time_start, all_end)
     print()
 
     assert one_day_start is not None
-    print("One day start (UTC):", one_day_start.slot_time.strftime(time_format))
+    print("Last Day Start (UTC):", one_day_start.slot_time.strftime(time_format))
     print_eta(one_day_start, all_end)
     print()
 
     assert one_hour_start is not None
-    print("One hour start (UTC):", one_hour_start.slot_time.strftime(time_format))
+    print("Last Hour start (UTC):", one_hour_start.slot_time.strftime(time_format))
     print_eta(one_hour_start, all_end)
 
 
 if __name__ == "__main__":
 
-    logs_folder = sys.argv[1] if len(sys.argv) > 1 else r"D:\scratch"
+    logs_folder = Path.home() /"logs" / "prysm_logs"
 
     print_etas(logs_folder)
