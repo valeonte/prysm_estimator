@@ -8,6 +8,7 @@ from typing import Optional
 
 
 MATCHER = re.compile(r'^time="([\d\-\:\s]+)" level.*latestProcessedSlot\/currentSlot="(\d+)\/(\d+)".*$')
+GENESIS_TIME = datetime.datetime(2020, 12, 1, 12, 0, 23, tzinfo=datetime.UTC)
 
 
 @dataclass
@@ -34,19 +35,18 @@ def print_eta(start: SlotAtTime, end: SlotAtTime) -> datetime.timedelta:
     now = datetime.datetime.now(datetime.UTC)
     slots_processed = end.slot - start.slot
     seconds_processed = (end.slot_time - start.slot_time).total_seconds()
-    current_progressed = end.current_slot - start.current_slot
 
-    processed_speed = current_progressed / seconds_processed
-    new_slots_speed = slots_processed / seconds_processed
+    processed_speed = slots_processed / seconds_processed
+    new_slots_speed = 1/12  # By design, 1 slot every 12 seconds
 
     # The actual speed is the difference between the calculating speed
     # and the speed of new slots being created.
-    cover_speed = new_slots_speed - processed_speed
+    cover_speed = processed_speed - new_slots_speed
     estimate_seconds = (end.current_slot - end.slot)/cover_speed
 
     print(f"{slots_processed} slots ({100*slots_processed/end.current_slot:.2f}%) "
           f"processed in {datetime.timedelta(seconds=seconds_processed)}, "
-          f"aka {new_slots_speed:.1f} slots/second, "
+          f"aka {processed_speed:.1f} slots/second, "
           f"estimated finish at {now + datetime.timedelta(seconds=estimate_seconds):%Y-%m-%d %H:%M}")
     return datetime.timedelta(seconds=estimate_seconds)
 
@@ -87,6 +87,7 @@ def print_etas(logs_folder: str | Path) -> None:
     time_format = "%Y-%m-%d %H:%M"
     assert all_end is not None
     print("Last log (UTC):", all_end.slot_time.strftime(time_format))
+    print("Last processed slot:", all_end.slot, "/", GENESIS_TIME + datetime.timedelta(seconds=all_end.slot*12))
     print()
 
     assert all_time_start is not None
