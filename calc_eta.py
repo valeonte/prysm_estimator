@@ -1,5 +1,5 @@
 import datetime
-import sys
+import os
 import re
 
 from pathlib import Path
@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 
-MATCHER = re.compile(r'^time="([\d\-\:\s]+)" level.*latestProcessedSlot\/currentSlot="(\d+)\/(\d+)".*$')
+MATCHER = re.compile(r'^time="([\d\-\:\s\.]+)" level.*latestProcessedSlot\/currentSlot="(\d+)\/(\d+)".*$')
 GENESIS_TIME = datetime.datetime(2020, 12, 1, 12, 0, 23, tzinfo=datetime.UTC)
 
 
@@ -24,7 +24,7 @@ class SlotAtTime:
         if match is None:
             return None
 
-        log_time = datetime.datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=datetime.UTC)
+        log_time = datetime.datetime.strptime(match.group(1)[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=datetime.UTC)
         last_slot = int(match.group(2))
         cur_slot = int(match.group(3))
 
@@ -57,24 +57,35 @@ def print_etas(logs_folder: str | Path) -> None:
     start_of_hour = now - datetime.timedelta(hours=1)
 
     all_time_start: SlotAtTime | None = None
+
+    # Potentially user provided all-time-start time
+    all_time_start_time = os.getenv("ALL_TIME_START")
+    if all_time_start_time is not None:
+         all_time_start = SlotAtTime(datetime.datetime.fromisoformat(all_time_start_time), 1, 12584648)
+
     one_day_start: SlotAtTime | None = None
     one_hour_start: SlotAtTime | None = None
     all_end: SlotAtTime | None = None
-    for log_file in Path(logs_folder).iterdir():
-        if not log_file.suffix.lower().startswith(".log"):
-            continue
-        
+    log_files = sorted(
+        (log_file
+         for log_file in Path(logs_folder).iterdir()
+         if log_file.suffix.lower().startswith(".log")),
+        key=lambda x: x.lstat().st_mtime,
+    )
+
+    # The first and last two log files suffice
+    for log_file in log_files[:1] + log_files[-2:]:
+
         print("Parsing", log_file)
         for log_line in log_file.read_text("utf8").splitlines():
-            
+
             slot = SlotAtTime.from_log_line(log_line)
             if slot is None:
                 continue
 
-            if all_time_start is None or slot.slot < all_time_start.slot:
+            if all_time_start is None:
+                # If not hard-code, pick first
                 all_time_start = slot
-            if all_end is None or slot.slot_time > all_end.slot_time:
-                all_end = slot
 
             if  slot.slot_time >= start_of_day:
                 if one_day_start is None or slot.slot < one_day_start.slot:
@@ -82,6 +93,8 @@ def print_etas(logs_folder: str | Path) -> None:
             if slot.slot_time >= start_of_hour:
                 if one_hour_start is None or slot.slot_time < one_hour_start.slot_time:
                     one_hour_start = slot
+
+            all_end = slot
 
     print()
     time_format = "%Y-%m-%d %H:%M"
@@ -91,7 +104,7 @@ def print_etas(logs_folder: str | Path) -> None:
     print()
 
     assert all_time_start is not None
-    print("Sync Start start (UTC):", all_time_start.slot_time.strftime(time_format))
+    print("Full Sync Start (UTC):", all_time_start.slot_time.strftime(time_format))
     print_eta(all_time_start, all_end)
     print()
 
@@ -101,7 +114,7 @@ def print_etas(logs_folder: str | Path) -> None:
     print()
 
     assert one_hour_start is not None
-    print("Last Hour start (UTC):", one_hour_start.slot_time.strftime(time_format))
+    print("Last Hour Start (UTC):", one_hour_start.slot_time.strftime(time_format))
     print_eta(one_hour_start, all_end)
 
 
