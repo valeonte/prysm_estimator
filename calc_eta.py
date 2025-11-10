@@ -6,6 +6,8 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
 
+from assessor import assess
+
 
 MATCHER = re.compile(r'^time="([\d\-\:\s\.]+)" level.*latestProcessedSlot\/currentSlot="(\d+)\/(\d+)".*$')
 GENESIS_TIME = datetime.datetime(2020, 12, 1, 12, 0, 23, tzinfo=datetime.UTC)
@@ -120,6 +122,12 @@ def print_etas(logs_folder: str | Path) -> None:
 
 if __name__ == "__main__":
 
-    logs_folder = Path.home() /"logs" / "prysm_logs"
+    prysm_logs_folder = Path.home() /"logs" / "prysm_logs"
+    prysm_log = Path.home() /"logs" / "prysm_logs" / "prysm.log"
+    erigon_log = Path.home() /"logs" / "erigon_logs" / "erigon.log"
 
-    print_etas(logs_folder)
+    print_etas(prysm_logs_folder)
+
+    print("\n\n" + "-" * 100 + "\n\n")
+
+    assess(erigon_log, prysm_log)
