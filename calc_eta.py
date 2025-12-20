@@ -9,7 +9,8 @@ from typing import Optional
 from assessor import assess
 
 
-MATCHER = re.compile(r'^time="([\d\-\:\s\.]+)" level.*latestProcessedSlot\/currentSlot="(\d+)\/(\d+)".*$')
+MATCHER = re.compile(r'^time="([\d\-\:\s\.]+)" level.*Processing block .*\. (\d+)\/(\d+).*initial-sync$')
+OLD_MATCHER = re.compile(r'^time="([\d\-\:\s\.]+)" level.*latestProcessedSlot\/currentSlot="(\d+)\/(\d+)".*$')
 GENESIS_TIME = datetime.datetime(2020, 12, 1, 12, 0, 23, tzinfo=datetime.UTC)
 
 
@@ -23,6 +24,8 @@ class SlotAtTime:
     @staticmethod
     def from_log_line(log_line: str) -> Optional["SlotAtTime"]:
         match = MATCHER.match(log_line)
+        if match is None:
+            match = OLD_MATCHER.match(log_line)
         if match is None:
             return None
 
