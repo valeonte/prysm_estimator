@@ -49,10 +49,17 @@ def print_eta(start: SlotAtTime, end: SlotAtTime) -> datetime.timedelta:
     cover_speed = processed_speed - new_slots_speed
     estimate_seconds = (end.current_slot - end.slot)/cover_speed
 
-    print(f"{slots_processed} slots ({100*slots_processed/end.current_slot:.2f}%) "
-          f"processed in {datetime.timedelta(seconds=seconds_processed)}, "
-          f"aka {processed_speed:.1f} slots/second, "
-          f"estimated finish at {now + datetime.timedelta(seconds=estimate_seconds):%Y-%m-%d %H:%M}")
+    out = (
+        f"{slots_processed} slots ({100*slots_processed/end.current_slot:.2f}%) "
+        f"processed in {datetime.timedelta(seconds=seconds_processed)}, "
+        f"aka {processed_speed:.2f} slots/second, vs new slots speed of {new_slots_speed:.2f} slots/second, "
+    )
+    if cover_speed > 0:
+        out += f"estimated finish at {now + datetime.timedelta(seconds=estimate_seconds):%Y-%m-%d %H:%M}"
+    else:
+        out += "LOSING GROUND, at this rate it will never finish!"
+
+    print(out)
     return datetime.timedelta(seconds=estimate_seconds)
 
 
