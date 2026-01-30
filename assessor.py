@@ -1,11 +1,12 @@
 import requests
 import json
+import os
 
 from pathlib import Path
 
 # --- CONFIG ---
-PRYSM_API = "http://localhost:3500"        # Prysm standard REST API
-ERIGON_RPC = "http://localhost:8545"       # Erigon JSON-RPC
+PRYSM_API = os.getenv("PRYSM_API", "http://localhost:3500")        # Prysm standard REST API
+ERIGON_RPC = os.getenv("ERIGON_RPC", "http://localhost:8545")      # Erigon JSON-RPC
 
 
 def get_erigon_sync_status():
