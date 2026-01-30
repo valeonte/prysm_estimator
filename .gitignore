@@ -1,3 +1,19 @@
 __pycache__
 
 .vscode
+
+# Virtual environment
+.venv/
+
+# uv lock file
+*.lock
+
+# Coverage
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+
+# pytest
+.pytest_cache/
