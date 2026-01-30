@@ -1,15 +1,16 @@
-import requests
 import json
 import os
-
 from pathlib import Path
+from typing import Any
+
+import requests
 
 # --- CONFIG ---
 PRYSM_API = os.getenv("PRYSM_API", "http://localhost:3500")        # Prysm standard REST API
 ERIGON_RPC = os.getenv("ERIGON_RPC", "http://localhost:8545")      # Erigon JSON-RPC
 
 
-def get_erigon_sync_status():
+def get_erigon_sync_status() -> dict[str, Any]:
     payload = {
         "jsonrpc": "2.0",
         "method": "eth_syncing",
@@ -21,20 +22,19 @@ def get_erigon_sync_status():
         result = r.json().get("result")
         if not result:
             return {"synced": True, "details": "Erigon fully synced"}
-        else:
-            result.pop("stages")
-            return {"synced": False, "result": result}
-    except Exception as e:
+        result.pop("stages")
+        return {"synced": False, "result": result}
+    except Exception as e:  # pylint: disable=broad-exception-caught
         return {"error": str(e)}
 
-def get_prysm_sync_status():
+def get_prysm_sync_status() -> dict[str, Any]:
     try:
         r = requests.get(f"{PRYSM_API}/eth/v1/node/syncing", timeout=120)
-        return r.json()["data"]
-    except Exception as e:
+        return r.json()["data"]  # type: ignore[no-any-return]
+    except Exception as e:  # pylint: disable=broad-exception-caught
         return {"error": str(e)}
 
-def scan_logs(log_file: Path, warn_keyword: str, error_keyword: str):
+def scan_logs(log_file: Path, warn_keyword: str, error_keyword: str) -> dict[str, Any]:
     if not log_file.is_file():
         return {"missing": True}
 
@@ -52,11 +52,11 @@ def scan_logs(log_file: Path, warn_keyword: str, error_keyword: str):
         "error_count": error_count,
         "warning_count": warning_count,
         "total_count": total_count,
-        "error_rate": "%.2f %%" % (100 * error_count / total_count),
-        "warning_rate": "%.2f %%" % (100 * warning_count / total_count),
+        "error_rate": f"{100 * error_count / total_count:.2f} %",
+        "warning_rate": f"{100 * warning_count / total_count:.2f} %",
     }
 
-def assess(erigon_log: Path, prysm_log: Path):
+def assess(erigon_log: Path, prysm_log: Path) -> None:
     print("🔍 Checking Erigon sync status...")
     erigon = get_erigon_sync_status()
     print(json.dumps(erigon, indent=2))

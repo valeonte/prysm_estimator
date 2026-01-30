@@ -8,9 +8,12 @@ from typing import Optional
 
 from assessor import assess
 
-
-MATCHER = re.compile(r'^time="([\d\-\:\s\.]+)" level.*Processing block .*\. (\d+)\/(\d+).*initial-sync$')
-OLD_MATCHER = re.compile(r'^time="([\d\-\:\s\.]+)" level.*latestProcessedSlot\/currentSlot="(\d+)\/(\d+)".*$')
+MATCHER = re.compile(
+    r'^time="([\d\-\:\s\.]+)" level.*Processing block .*\. (\d+)\/(\d+).*initial-sync$'
+)
+OLD_MATCHER = re.compile(
+    r'^time="([\d\-\:\s\.]+)" level.*latestProcessedSlot\/currentSlot="(\d+)\/(\d+)".*$'
+)
 GENESIS_TIME = datetime.datetime(2020, 12, 1, 12, 0, 23, tzinfo=datetime.UTC)
 
 
@@ -29,7 +32,9 @@ class SlotAtTime:
         if match is None:
             return None
 
-        log_time = datetime.datetime.strptime(match.group(1)[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=datetime.UTC)
+        log_time = datetime.datetime.strptime(
+            match.group(1)[:19], "%Y-%m-%d %H:%M:%S"
+        ).replace(tzinfo=datetime.UTC)
         last_slot = int(match.group(2))
         cur_slot = int(match.group(3))
 
@@ -52,10 +57,12 @@ def print_eta(start: SlotAtTime, end: SlotAtTime) -> datetime.timedelta:
     out = (
         f"{slots_processed} slots ({100*slots_processed/end.current_slot:.2f}%) "
         f"processed in {datetime.timedelta(seconds=seconds_processed)}, "
-        f"aka {processed_speed:.2f} slots/second, vs new slots speed of {new_slots_speed:.2f} slots/second, "
+        f"aka {processed_speed:.2f} slots/second, "
+        f"vs new slots speed of {new_slots_speed:.2f} slots/second, "
     )
     if cover_speed > 0:
-        out += f"estimated finish at {now + datetime.timedelta(seconds=estimate_seconds):%Y-%m-%d %H:%M}"
+        eta = now + datetime.timedelta(seconds=estimate_seconds)
+        out += f"estimated finish at {eta:%Y-%m-%d %H:%M}"
     else:
         out += "LOSING GROUND, at this rate it will never finish!"
 
@@ -73,7 +80,9 @@ def print_etas(logs_folder: str | Path) -> None:
     # Potentially user provided all-time-start time
     all_time_start_time = os.getenv("ALL_TIME_START")
     if all_time_start_time is not None:
-         all_time_start = SlotAtTime(datetime.datetime.fromisoformat(all_time_start_time), 1, 12584648)
+        all_time_start = SlotAtTime(
+            datetime.datetime.fromisoformat(all_time_start_time), 1, 12584648
+        )
 
     one_day_start: SlotAtTime | None = None
     one_hour_start: SlotAtTime | None = None
@@ -99,7 +108,7 @@ def print_etas(logs_folder: str | Path) -> None:
                 # If not hard-code, pick first
                 all_time_start = slot
 
-            if  slot.slot_time >= start_of_day:
+            if slot.slot_time >= start_of_day:
                 if one_day_start is None or slot.slot < one_day_start.slot:
                     one_day_start = slot
             if slot.slot_time >= start_of_hour:
@@ -112,7 +121,8 @@ def print_etas(logs_folder: str | Path) -> None:
     time_format = "%Y-%m-%d %H:%M"
     assert all_end is not None
     print("Last log (UTC):", all_end.slot_time.strftime(time_format))
-    print("Last processed slot:", all_end.slot, "/", GENESIS_TIME + datetime.timedelta(seconds=all_end.slot*12))
+    slot_time = GENESIS_TIME + datetime.timedelta(seconds=all_end.slot * 12)
+    print("Last processed slot:", all_end.slot, "/", slot_time)
     print()
 
     assert all_time_start is not None
