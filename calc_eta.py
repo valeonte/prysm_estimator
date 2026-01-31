@@ -6,6 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
 
+from analyse_logs import read_log_tail
 from assessor import assess
 
 MATCHER = re.compile(
@@ -15,7 +16,7 @@ OLD_MATCHER = re.compile(
     r'^time="([\d\-\:\s\.]+)" level.*latestProcessedSlot\/currentSlot="(\d+)\/(\d+)".*$'
 )
 GENESIS_TIME = datetime.datetime(2020, 12, 1, 12, 0, 23, tzinfo=datetime.UTC)
-
+MERGE_SLOT = 4_700_013
 
 @dataclass
 class SlotAtTime:
@@ -68,6 +69,21 @@ def print_eta(start: SlotAtTime, end: SlotAtTime) -> datetime.timedelta:
 
     print(out)
     return datetime.timedelta(seconds=estimate_seconds)
+
+
+def print_eta_to_merge(start: SlotAtTime, end: SlotAtTime) -> None:
+    now = datetime.datetime.now(datetime.UTC)
+    slots_processed = end.slot - start.slot
+    seconds_processed = (end.slot_time - start.slot_time).total_seconds()
+
+    cover_speed = slots_processed / seconds_processed
+    estimate_seconds = (MERGE_SLOT - end.slot)/cover_speed
+
+    out = f"TO MERGE: Actual speed {cover_speed:.2f} slots/second, "
+    eta = now + datetime.timedelta(seconds=estimate_seconds)
+    out += f"getting to The Merge slot at {eta:%Y-%m-%d %H:%M}"
+
+    print(out)
 
 
 def print_etas(logs_folder: str | Path) -> None:
@@ -130,6 +146,10 @@ def print_etas(logs_folder: str | Path) -> None:
     print_eta(all_time_start, all_end)
     print()
 
+    if all_end.slot < MERGE_SLOT:
+        print_eta_to_merge(all_time_start, all_end)
+        print()
+
     assert one_day_start is not None
     print("Last Day Start (UTC):", one_day_start.slot_time.strftime(time_format))
     print_eta(one_day_start, all_end)
@@ -145,6 +165,16 @@ if __name__ == "__main__":
     prysm_logs_folder = Path.home() /"logs" / "prysm_logs"
     prysm_log = Path.home() /"logs" / "prysm_logs" / "prysm.log"
     erigon_log = Path.home() /"logs" / "erigon_logs" / "erigon.log"
+    recent_logs = Path.home() / "recent_logs.txt"
+
+    prysm_log_tail = read_log_tail(prysm_log)
+    erigon_log_tail = read_log_tail(erigon_log)
+
+    with recent_logs.open("w", encoding="utf8") as f:
+        f.write("# Prysm Logs\n\n")
+        f.write(prysm_log_tail)
+        f.write("\n\n# Erigon Logs\n\n")
+        f.write(erigon_log_tail)
 
     print_etas(prysm_logs_folder)
 

@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Helper script to parse Prysm logs and estimate when sync will finish"
 requires-python = ">=3.13"
 dependencies = [
+    "anthropic>=0.77.0",
     "requests>=2.31",
 ]
 
