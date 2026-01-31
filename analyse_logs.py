@@ -15,7 +15,7 @@ API_KEY = os.environ.get("ANTHROPIC_API_KEY")  # Set this in your environment
 # System prompt with your setup details
 SYSTEM_PROMPT = """You are an Ethereum node troubleshooting expert analyzing logs from a dual-node setup."""
 
-def read_log_tail(filepath, lines=100):
+def read_log_tail(filepath: str | Path, lines: int = 100) -> str:
     """Read the last N lines from a log file"""
     try:
         with open(filepath, 'r') as f:
@@ -28,7 +28,7 @@ def read_log_tail(filepath, lines=100):
         return f"ERROR reading {filepath}: {str(e)}"
 
 
-def analyze_logs(erigon_logs, prysm_logs, custom_question=None):
+def analyze_logs(erigon_logs: str, prysm_logs: str, custom_question: str | None = None) -> str:
     """Send logs to Claude API for analysis"""
 
     if not API_KEY:
@@ -74,7 +74,7 @@ def analyze_logs(erigon_logs, prysm_logs, custom_question=None):
         return f"API Error: {str(e)}"
 
 
-def main():
+def main() -> None:
     """Main function to run the log analyzer"""
 
     print("=" * 80)
@@ -116,11 +116,11 @@ def main():
             lines = int(sys.argv[1])
             print(f"Reading last {lines} lines from default log locations...")
             erigon_logs = read_log_tail(
-                os.environ.get("ERIGON_LOG"),
+                os.environ.get("ERIGON_LOG", ""),
                 lines=lines
             )
             prysm_logs = read_log_tail(
-                os.environ.get("PRYSM_LOG"),
+                os.environ.get("PRYSM_LOG", ""),
                 lines=lines
             )
         else:
@@ -131,11 +131,11 @@ def main():
         # Default: read last 100 lines
         print("Reading last 100 lines from default log locations...")
         erigon_logs = read_log_tail(
-            os.environ.get("ERIGON_LOG"),
+            os.environ.get("ERIGON_LOG", ""),
             lines=100
         )
         prysm_logs = read_log_tail(
-            os.environ.get("PRYSM_LOG"),
+            os.environ.get("PRYSM_LOG", ""),
             lines=100
         )
 
