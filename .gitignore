@@ -5,9 +5,6 @@ __pycache__
 # Virtual environment
 .venv/
 
-# uv lock file
-*.lock
-
 # Coverage
 .coverage
 htmlcov/

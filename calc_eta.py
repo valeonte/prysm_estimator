@@ -167,14 +167,14 @@ if __name__ == "__main__":
     erigon_log = Path.home() /"logs" / "erigon_logs" / "erigon.log"
     recent_logs = Path.home() / "recent_logs.txt"
 
-    prysm_log_tail = read_log_tail(prysm_log)
-    erigon_log_tail = read_log_tail(erigon_log)
+    PRYSM_LOG_TAIL = read_log_tail(prysm_log)
+    ERIGON_LOG_TAIL = read_log_tail(erigon_log)
 
     with recent_logs.open("w", encoding="utf8") as f:
         f.write("# Prysm Logs\n\n")
-        f.write(prysm_log_tail)
+        f.write(PRYSM_LOG_TAIL)
         f.write("\n\n# Erigon Logs\n\n")
-        f.write(erigon_log_tail)
+        f.write(ERIGON_LOG_TAIL)
 
     print_etas(prysm_logs_folder)
 
